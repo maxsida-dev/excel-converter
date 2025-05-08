@@ -24,8 +24,8 @@ export class ExcelConverter implements INodeType {
                 displayName: 'Input Field',
                 name: 'inputField',
                 type: 'string',
-                default: 'data',
-                description: 'The name of the field that contains the JSON string data',
+                default: 'json.data',
+                description: 'The name of the field that contains the JSON string data. Example: json.data',
                 required: true,
             },
             {
@@ -53,7 +53,6 @@ export class ExcelConverter implements INodeType {
     };
 
     async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-        const items = this.getInputData();
         
         try {
             // Get parameters from the first item
@@ -62,21 +61,10 @@ export class ExcelConverter implements INodeType {
             const binaryPropertyName = this.getNodeParameter('binaryPropertyName', 0) as string;
             const fileName = this.getNodeParameter('fileName', 0) as string;
 
-            // Get the first item
-            const item = items[0];
-            
-            // Get the data from the specified field as string
-            const jsonString = item.json[inputField];
-            
-            // Ensure data is a string
-            if (typeof jsonString !== 'string') {
-                throw new Error(`Data in field "${inputField}" is not a string. Found type: ${typeof jsonString}`);
-            }
-            
-            // Parse the JSON string to an array of objects
+            // Parse the JSON string directly from inputField
             let data;
             try {
-                data = JSON.parse(jsonString);
+                data = JSON.parse(inputField);
             } catch (error) {
                 throw new Error(`Failed to parse JSON string: ${error.message}`);
             }
@@ -88,7 +76,7 @@ export class ExcelConverter implements INodeType {
             
             // Ensure we have at least one item and it's an object
             if (data.length === 0 || typeof data[0] !== 'object' || data[0] === null) {
-                throw new Error('The data must contain at least one object');
+                throw new Error('Parsed JSON data must contain at least one object');
             }
 
             // Create a new workbook
@@ -143,6 +131,7 @@ export class ExcelConverter implements INodeType {
         }
     }
 }
+
 
 
 
