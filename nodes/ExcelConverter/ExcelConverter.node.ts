@@ -1,5 +1,5 @@
-import { IExecuteFunctions } from 'n8n-core';
 import {
+    IExecuteFunctions,
     INodeExecutionData,
     INodeType,
     INodeTypeDescription,
@@ -10,7 +10,7 @@ export class ExcelConverter implements INodeType {
     description: INodeTypeDescription = {
         displayName: 'Excel Converter',
         name: 'excelConverter',
-        icon: 'file:excel.svg',
+        icon: 'file:excel-2.svg',
         group: ['transform'],
         version: 1,
         description: 'Converts array data to Excel file.',
@@ -59,7 +59,7 @@ export class ExcelConverter implements INodeType {
                 const item = items[itemIndex];
                 // Get the data from the item
                 const data = item.json.data as Record<string, unknown>[];
-                
+
                 if (!Array.isArray(data)) {
                     throw new Error('The data must be an array of objects.');
                 }
