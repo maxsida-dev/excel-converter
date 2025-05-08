@@ -10,10 +10,10 @@ export class ExcelConverter implements INodeType {
     description: INodeTypeDescription = {
         displayName: 'Excel Converter',
         name: 'excelConverter',
-        icon: 'file:../icons/excel.svg',
+        icon: 'file:icons/excel.svg',
         group: ['transform'],
         version: 1,
-        description: 'Converts array data to Excel file',
+        description: 'Converts JSON string data to Excel file',
         defaults: {
             name: 'Excel Converter',
         },
@@ -25,7 +25,7 @@ export class ExcelConverter implements INodeType {
                 name: 'inputField',
                 type: 'string',
                 default: 'data',
-                description: 'The name of the field that contains the array data',
+                description: 'The name of the field that contains the JSON string data',
                 required: true,
             },
             {
@@ -65,12 +65,25 @@ export class ExcelConverter implements INodeType {
             // Get the first item
             const item = items[0];
             
-            // Get the data from the specified field
-            const data = item.json[inputField];
+            // Get the data from the specified field as string
+            const jsonString = item.json[inputField];
             
-            // Ensure data is an array
+            // Ensure data is a string
+            if (typeof jsonString !== 'string') {
+                throw new Error(`Data in field "${inputField}" is not a string. Found type: ${typeof jsonString}`);
+            }
+            
+            // Parse the JSON string to an array of objects
+            let data;
+            try {
+                data = JSON.parse(jsonString);
+            } catch (error) {
+                throw new Error(`Failed to parse JSON string: ${error.message}`);
+            }
+            
+            // Ensure parsed data is an array
             if (!Array.isArray(data)) {
-                throw new Error(`Data in field "${inputField}" is not an array. Found type: ${typeof data}`);
+                throw new Error('Parsed JSON data is not an array');
             }
             
             // Ensure we have at least one item and it's an object
@@ -130,6 +143,7 @@ export class ExcelConverter implements INodeType {
         }
     }
 }
+
 
 
 

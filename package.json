@@ -19,7 +19,8 @@
   },
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy:icons",
+    "copy:icons": "mkdir -p dist/nodes/ExcelConverter/icons && cp -r nodes/ExcelConverter/icons/* dist/nodes/ExcelConverter/icons/",
     "dev": "tsc --watch",
     "format": "prettier --write \"nodes/**/*.ts\" \"credentials/**/*.ts\"",
     "lint": "eslint nodes credentials package.json",
@@ -27,7 +28,8 @@
     "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "nodes/ExcelConverter/icons"
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
@@ -54,3 +56,4 @@
     "exceljs": "^4.3.0"
   }
 }
+
