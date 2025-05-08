@@ -10,16 +10,24 @@ export class ExcelConverter implements INodeType {
     description: INodeTypeDescription = {
         displayName: 'Excel Converter',
         name: 'excelConverter',
-        icon: 'file:excel-2.svg',
+        icon: 'file:../icons/excel.svg',
         group: ['transform'],
         version: 1,
-        description: 'Converts array data to Excel file.',
+        description: 'Converts array data to Excel file',
         defaults: {
             name: 'Excel Converter',
         },
         inputs: ['main'],
         outputs: ['main'],
         properties: [
+            {
+                displayName: 'Input Field',
+                name: 'inputField',
+                type: 'string',
+                default: 'data',
+                description: 'The name of the field that contains the array data',
+                required: true,
+            },
             {
                 displayName: 'Worksheet Name',
                 name: 'worksheetName',
@@ -46,81 +54,85 @@ export class ExcelConverter implements INodeType {
 
     async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
         const items = this.getInputData();
-        const returnData: INodeExecutionData[] = [];
+        
+        try {
+            // Get parameters from the first item
+            const inputField = this.getNodeParameter('inputField', 0) as string;
+            const worksheetName = this.getNodeParameter('worksheetName', 0) as string;
+            const binaryPropertyName = this.getNodeParameter('binaryPropertyName', 0) as string;
+            const fileName = this.getNodeParameter('fileName', 0) as string;
 
-        for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-            try {
-                // Get parameters
-                const worksheetName = this.getNodeParameter('worksheetName', itemIndex) as string;
-                const binaryPropertyName = this.getNodeParameter('binaryPropertyName', itemIndex) as string;
-                const fileName = this.getNodeParameter('fileName', itemIndex) as string;
-
-                // Get the item
-                const item = items[itemIndex];
-                // Get the data from the item
-                const data = item.json.data as Record<string, unknown>[];
-
-                if (!Array.isArray(data)) {
-                    throw new Error('The data must be an array of objects.');
-                }
-
-                // Create a new workbook
-                const workbook = new ExcelJS.Workbook();
-                const worksheet = workbook.addWorksheet(worksheetName);
-
-                // Define columns with keys
-                if (data.length > 0) {
-                    const firstObject = data[0];
-                    const columns = Object.keys(firstObject).map(key => ({
-                        header: key,
-                        key: key,
-                        width: 20
-                    }));
-                    
-                    worksheet.columns = columns;
-                    
-                    // Add data rows using objects (ExcelJS will match by key)
-                    data.forEach(rowData => {
-                        worksheet.addRow(rowData);
-                    });
-                }
-
-                // Write to buffer
-                const buffer = await workbook.xlsx.writeBuffer();
-
-                // Return data
-                const newItem: INodeExecutionData = {
-                    json: {
-                        success: true,
-                        rowCount: data.length,
-                    },
-                    binary: {},
-                };
-
-                newItem.binary![binaryPropertyName] = {
-                    data: Buffer.from(buffer).toString('base64'),
-                    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    fileName,
-                };
-
-                returnData.push(newItem);
-            } catch (error) {
-                if (this.continueOnFail()) {
-                    returnData.push({
-                        json: {
-                            success: false,
-                            error: error.message,
-                        },
-                    });
-                    continue;
-                }
-                throw error;
+            // Get the first item
+            const item = items[0];
+            
+            // Get the data from the specified field
+            const data = item.json[inputField];
+            
+            // Ensure data is an array
+            if (!Array.isArray(data)) {
+                throw new Error(`Data in field "${inputField}" is not an array. Found type: ${typeof data}`);
             }
-        }
+            
+            // Ensure we have at least one item and it's an object
+            if (data.length === 0 || typeof data[0] !== 'object' || data[0] === null) {
+                throw new Error('The data must contain at least one object');
+            }
 
-        return [returnData];
+            // Create a new workbook
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet(worksheetName);
+
+            // Define columns with keys
+            const firstObject = data[0];
+            const columns = Object.keys(firstObject).map(key => ({
+                header: key,
+                key: key,
+                width: 20
+            }));
+            
+            worksheet.columns = columns;
+            
+            // Add data rows using objects (ExcelJS will match by key)
+            data.forEach(rowData => {
+                worksheet.addRow(rowData);
+            });
+
+            // Write to buffer
+            const buffer = await workbook.xlsx.writeBuffer();
+
+            // Return data
+            const newItem: INodeExecutionData = {
+                json: {
+                    success: true,
+                    rowCount: data.length,
+                },
+                binary: {},
+            };
+
+            newItem.binary![binaryPropertyName] = {
+                data: Buffer.from(buffer).toString('base64'),
+                mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                fileName,
+            };
+
+            return [[newItem]];
+            
+        } catch (error) {
+            if (this.continueOnFail()) {
+                return [[{
+                    json: {
+                        success: false,
+                        error: error.message,
+                    },
+                }]];
+            }
+            throw error;
+        }
     }
 }
+
+
+
 
 
 
